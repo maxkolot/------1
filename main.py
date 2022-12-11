@@ -1,0 +1,452 @@
+
+from func import *
+
+
+YOUTOKEN = "381764678:TEST:46535"
+# TOKEN = ('5648421216:AAFhRPUQw0FQ6tGkxjyR-Y8TeYMGuhs68OA')
+TOKEN = ('5954410335:AAFKiIGDT1VTsgKuNvLgTsrKV-YwgmUdM-o')
+Configuration.account_id =  506751
+Configuration.secret_key ='538350'
+logging.basicConfig(level=logging.INFO)
+
+
+storage = MemoryStorage()
+bot = Bot(token = TOKEN)
+
+offset = dict()
+
+srcvid = {}
+srcaud = {}
+srctex = {}
+firstname = {}
+st = {}
+ui = {}
+
+
+async def clean(vi, vi2):
+   os.remove(vi)
+   os.remove(vi2)
+   
+async def cleanall(vi, vi2, au):
+   os.remove(vi)
+   os.remove(vi2)
+   os.remove(au)
+class clientState(StatesGroup):
+    start = State()
+    videost = State()
+    audiost = State()
+    otmenst = State()
+    vremst = State()
+    otmen = State()
+    q1=  State()
+    q11 = State()
+    q12 = State()
+    smm = State()
+    smmq = State()
+
+
+    # 
+dp = Dispatcher(bot, storage=storage)
+
+
+db = Database("dataBase.db")
+
+def days_to_sec(days):
+    return days * 24 * 60 * 60
+def time_sub_day(get_time):
+    time_now = int(time.time())
+    midlle = int(get_time) - time_now
+    if midlle<=0:
+        return False
+    else:
+        dt= str(datetime.timedelta(seconds=midlle))
+        dt = dt.replace('days', 'дней')
+        dt = dt.replace('day', 'день')
+        return dt 
+
+
+
+
+
+
+
+@dp.message_handler(state=clientState.start)
+async def bot_message(message: types.Message, state: FSMContext):
+    global srcvid
+    global srcaud
+    global srctex
+    global firstname
+    global st
+    global ui
+    if message.chat.type == 'private':
+
+
+        if message.text == "Профиль":
+            await clientState.otmen.set()
+            user_sub = time_sub_day(db.get_time_sub(message.from_user.id))
+            if user_sub ==False:
+                user_sub = "\nВаш тариф: FREE"
+                user = db.get_nickname(message.from_user.id)
+                user_nickname = "Ваш ник: " + db.get_nickname(message.from_user.id)
+            
+                await bot.send_message(message.from_user.id, user_nickname + user_sub, reply_markup=nav.mainMenu1)
+                await bot.send_message(message.from_user.id,  'Чтобы пользоваться ботом без ограниченй, предлагаем оформить подписку по кнопке ниже😏', reply_markup=nav.sub_inline)
+            else:
+                user_sub = time_sub_day(db.get_time_sub(message.from_user.id))
+                user_sub = "\n Тариф: VIP❤️\n Действителен еще " + user_sub
+                user_nickname = "Ваш ник: " + db.get_nickname(message.from_user.id)+"🤤"
+                await bot.send_message(message.from_user.id, user_nickname + user_sub, reply_markup=nav.mainMenu1)
+            
+
+        elif  message.text == "Подписка":
+            await clientState.otmen.set()
+            if db.get_sub_status(message.from_user.id) == False:
+                user_tarif = "Ваш тариф: FREE"
+                await bot.send_message(message.from_user.id, user_tarif, reply_markup=nav.mainMenu1)
+                await bot.send_message(message.from_user.id,  'Чтобы пользоваться ботом без ограниченй, предлагаем оформить подписку по кнопке ниже😏', reply_markup=nav.sub_inline)
+            else:
+                user_sub = time_sub_day(db.get_time_sub(message.from_user.id))
+                user_sub = "\n Тариф: VIP\n Действителен еще " + user_sub
+                await bot.send_message(message.from_user.id,  user_sub, reply_markup=nav.mainMenu1)
+
+        elif message.text == "СОЗДАТЬ КРУГ":
+            if db.get_sub_status(message.from_user.id) == False:
+                st = False
+             
+                await bot.send_message(message.from_user.id,  "В вашем тарифе доступны круги до 30 сек.\n\nДавай начнем, отправь мне любое видео☺️", reply_markup=nav.mainMenu1)
+                await clientState.videost.set()
+            elif  db.get_sub_status(message.from_user.id) == True:
+                st = True
+                await bot.send_message(message.from_user.id,  "В вашем тарифе ограничения отсутсвуют\n\nДавай начнем, отправь мне любое видео☺️", reply_markup=nav.mainMenu1)
+                await clientState.videost.set()
+
+
+@dp.message_handler(state=clientState.otmen)
+async def start(message: types):
+
+    if message.text == "В главное меню":
+        await clientState.start.set()
+
+        await bot.delete_message(message.from_user.id, (message.message_id-1))
+        await bot.send_message(message.from_user.id, 'Вы в главном меню😏', reply_markup=nav.mainMenu)
+
+
+@dp.callback_query_handler(text='submonth', state="*")
+async def submonth ( call: types.CallbackQuery):
+    global srcvid
+    global srcaud
+    global srctex
+    global firstname
+    await clientState.otmen.set()
+    await bot.delete_message(call.from_user.id, call.message.message_id)
+    await bot.send_invoice(chat_id=call.from_user.id, title="Подписка на", description="данная подписка дает возможность пользоваться ботом целый месяц без ограничейний", payload="month_sub", provider_token=YOUTOKEN, currency="RUB", start_parameter="test_bot", prices=[{"label": "RUB", "amount": 8000}])
+
+
+@dp.pre_checkout_query_handler(state=clientState.all_states)
+async def process_pre_checkout_query(pre_checkout_query: types.PreCheckoutQuery):
+    await bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
+
+
+@dp.message_handler(content_types=ContentType.SUCCESSFUL_PAYMENT, state="*")
+async def process_pay(message: Message):
+    global srcvid
+    global srcaud
+    global srctex
+    global firstname
+    if message.successful_payment.invoice_payload == "month_sub":
+        
+        #подписываем пользователя 
+        time_sub = int(time.time()) + days_to_sec(30)
+        db.set_time_sub(message.from_user.id, time_sub)
+        await clientState.start.set()
+        await bot.send_message(message.from_user.id, "Вы подписались на тариф VIP❤️🤤", reply_markup=nav.mainMenu)
+
+
+
+
+
+           
+
+
+@dp.message_handler(content_types=ContentType.VIDEO, state=clientState.videost)
+async def check_video(message: Message):
+        global srcvid
+        global srcaud
+        global srctex
+        global firstname
+        global ui
+        global user_nickname
+
+    
+        file_id = message.video.file_id 
+        if message.video.file_size > 1.7e+7:
+            await bot.send_message(message.from_user.id, 'Ох он слишком большой😂\nОтправь видео до 17мб', reply_markup=nav.backout)
+          # Get file id
+        else:
+            file = await bot.get_file(file_id)  # Get file path
+            video_number = 0  # Number video file
+            # If the file exists, add one to the number
+
+            await bot.send_message(message.from_user.id, 'Отлично☺️!', reply_markup=nav.backout)
+            await bot.send_message(message.from_user.id, '\nЖелаешь добвать аудио?', reply_markup=nav.sub_inline_audio)
+            user_nickname =   db.get_nickname(message.from_user.id)
+            firstname = str(message.from_user.id).format(message.from_user)
+            await clientState.q1.set()
+            while (os.path.isfile(f"video{video_number}.mp4")):
+                video_number += 1
+            srcvid[message.chat.id] = f"video{video_number}.mp4"
+            await bot.download_file(file.file_path, srcvid[message.chat.id])
+
+            ui = message.from_user.id
+        # await bot.send_message(message.from_user.id,'', reply_markup=nav.mainMenu1)
+
+
+@dp.message_handler(state=clientState.videost)
+async def start(message: types):
+   
+   if message.text == "В главное меню":
+        await bot.delete_message(message.from_user.id, message.message_id)
+        await clientState.start.set()
+        await bot.send_message(message.from_user.id, 'Вы в главном меню❤️', reply_markup=nav.mainMenu)
+    
+
+
+
+@dp.callback_query_handler(text='yes_btn', state=clientState.q1)
+async def yes_btn(call: types.CallbackQuery):
+    global srcvid
+    global srcaud
+    global srctex
+    global firstname
+    await clientState.audiost.set()
+    await bot.delete_message(call.from_user.id, call.message.message_id)
+    # await bot.send_message(call.message.chat.id, 'Отлично', reply_markup=nav.backout)
+
+    await bot.send_message(call.message.chat.id, 'Отлично\nТеперь отправь мне аудио в формате mp3\nили перешли трек из @mixvk_bot😏', reply_markup=nav.backout)
+
+@dp.callback_query_handler(text= 'no_btn', state=clientState.q1)
+async def no_btn(call: types.CallbackQuery):
+
+    await bot.delete_message(call.from_user.id, call.message.message_id)
+    global srcvid
+    global srcaud
+    global srctex
+    global firstname
+    global st
+    global ui
+
+    if  st == False:
+        await clientState.start.set()
+        await bot.send_message(ui, 'Отлично\nУже загружаю круг 🚛  ')
+        na = str(call.message.chat.id) + ".mp4"
+        circleOrig_30(srcvid[call.message.chat.id], na)
+        await bot.send_video_note(ui, InputFile(na), reply_markup=nav.mainMenu)
+        await bot.send_message(ui,  'Чтобы убрать водяной знак и загружать видео длиной в 1 минуту перейдите на тариф VIP по кнопке ниже😏', reply_markup=nav.sub_inline)
+        await bot.send_message(ui, text=krug1(db.get_nickname(ui)))
+        await clean(srcvid[ui], na)
+
+    elif st == True:
+        await clientState.start.set()
+        await bot.send_message(ui, 'Отлично\nУже загружаю круг 🚛  ')
+        na = str(call.message.chat.id) + ".mp4"
+        circleOrig(srcvid[call.message.chat.id], na)
+        await bot.send_video_note(ui, InputFile(na), reply_markup=nav.mainMenu)
+        user = db.get_nickname(ui)
+        await bot.send_message(ui, krug1(db.get_nickname(ui)))
+        await clean(srcvid[ui], na)
+
+
+@dp.message_handler(state=clientState.audiost)
+async def start(message: types.Message):
+    global srcvid
+    global srcaud
+    global srctex
+    global firstname
+    global st
+    global ui
+
+    if message.text == "Назад":
+
+       await clientState.q1.set()
+       await bot.delete_message(message.from_user.id, (message.message_id-1))
+     
+    #    await clean1(srcvid[ui])
+
+       await bot.send_message(message.from_user.id, 'Окей😤', reply_markup=nav.backout)
+
+       await bot.send_message(message.from_user.id, '\nЖелаешь добвать аудио?', reply_markup=nav.sub_inline_audio)
+
+@dp.message_handler(state=clientState.q1)
+async def start(message: types.Message):
+    global srcvid
+    global srcaud
+    global srctex
+    global firstname
+    global st
+    global ui
+
+    if message.text == "Назад":
+    
+       await clientState.videost.set()
+       await bot.delete_message(message.from_user.id, (message.message_id-1))
+      
+       await clean1(srcvid[ui])
+
+       await bot.send_message(message.from_user.id, 'Окей\nПросто оправь мне видео😏', reply_markup=nav.mainMenu1)
+
+
+@dp.message_handler(content_types=types.ContentType.AUDIO,state=clientState.audiost)
+async def xxxxacheck(message: Message):
+    global srcvid
+    global srcaud
+    global srctex
+    global firstname
+
+    await bot.delete_message(message.from_user.id,( message.message_id-1))
+    await bot.send_message(message.from_user.id, 'Ок получил☺️')
+    file_id = message.audio.file_id  # Get file id
+    file = await bot.get_file(file_id)  # Get file path
+    audio_number = 0  
+    await clientState.vremst.set()
+    src1 = file.file_path
+    srcaud[message.chat.id] = src1
+    while (os.path.isfile(f"audio{audio_number}.mp3")):
+        audio_number += 1
+    srcaud[message.chat.id] = f"audio{audio_number}.mp3"
+    await bot.download_file(file.file_path, srcaud[message.chat.id])
+    await bot.send_message(message.from_user.id, '\nВыберите фрагмент трека,  с какой секунды его начать\nнапишите цифрой', reply_markup=nav.backout)
+
+        
+        
+@dp.message_handler(state=clientState.audiost)
+async def start(message: types.Message):
+
+   if message.text == "В главное меню":
+
+        await bot.delete_message(message.from_user.id, message.message_id)
+        await clientState.start.set()
+        await bot.send_message(message.from_user.id, 'Вы в главном меню😍', reply_markup=nav.mainMenu)
+
+
+@dp.message_handler(state=clientState.vremst)
+async def get_sec(message: Message):
+    global srcvid
+    global srcaud
+    global srctex
+    global firstname
+
+    await bot.delete_message(message.from_user.id, (message.message_id-1))
+    if message.text == "Назад":
+        await clientState.q1.set()
+        await clean1(srcaud[ui])
+        await bot.send_message(message.from_user.id, 'Окей😏', reply_markup=nav.backout)
+        await bot.send_message(message.from_user.id, '\nЖелаешь добвать аудио?', reply_markup=nav.sub_inline_audio)
+    elif message.text.isdigit() == True:
+        if db.get_sub_status(message.from_user.id) == False:
+
+            await bot.send_message(message.chat.id, 'Отлично\nУже загружаю круг🚛❤️ ')
+            na = str(message.chat.id) + ".mp4"
+            srctex[message.chat.id] = int(message.text)
+            circle_30(srcvid[message.chat.id], na, srcaud[message.chat.id], srctex[message.chat.id])
+            await bot.send_video_note(message.from_user.id, InputFile(na), reply_markup=nav.mainMenu)
+            await cleanall(srcvid[ui], na, srcaud[ui])
+            await bot.send_message(message.from_user.id,  'Чтобы убрать водяной знак и загружать видео длиной в 1 минуту перейдите на тариф VIP по кнопке ниже😏', reply_markup=nav.sub_inline)
+            await bot.send_message(message.from_user.id, text=krug1(db.get_nickname(message.from_user.id)))
+            await clientState.start.set()
+        else:
+
+            await bot.send_message(message.chat.id, 'Отлично\nУже загружаю круг🚛❤️ ')
+            na = str(message.chat.id) + ".mp4"
+            srctex[message.chat.id] = int(message.text)
+            circle_60(srcvid[message.chat.id], na,
+                    srcaud[message.chat.id], srctex[message.chat.id])
+            await bot.send_video_note(message.from_user.id, InputFile(na), reply_markup=nav.mainMenu)
+            await bot.send_message(message.from_user.id, text=krug1(db.get_nickname(message.from_user.id)))
+            await cleanall(srcvid[ui], na, srcaud[ui])
+            await clientState.start.set()
+    
+    else:
+        await bot.send_message(message.from_user.id, "Просто напиши цифру😤")
+
+
+
+
+
+       
+
+@dp.message_handler(state=clientState.vremst)
+async def start(message: types.Message):
+
+   if message.text == "Назад":
+       await clientState.q1.set()
+       await bot.send_message(message.from_user.id, 'Вы в главном меню', reply_markup=nav.mainMenu)
+
+
+@dp.message_handler(commands=['SMM'])
+async def smm(message: types.Message):
+    await clientState.smm.set()
+    if message.chat.type == 'private':
+        if message.from_user.id == 1340988413:
+            text = message.text[5:]
+            users = db.get_users_smm()
+            for row in users:
+                try:
+                    await bot.send_message(row[0], text)
+                    if row[1] != 1:
+                        db.set_active(row[0], 1)
+                except:
+                    db.set_active(row[0], 0)
+            await bot.send_message(1340988413, 'Напиши текст для рассылки')
+
+
+@dp.message_handler(state=clientState.smm)
+async def replay_smm(message: types.Message):
+    if message.chat.type == 'private':
+        if message.from_user.id == 1340988413:
+            await clientState.smmq.set()
+            await bot.send_message(1340988413, message, reply_markup=nav.sub_inline_audio)
+
+
+
+
+
+
+@dp.message_handler(state=None)
+async def start(message: types.Message):
+    if message.chat.type == 'private':
+        global srcvid
+        global srcaud
+        global srctex
+        global firstname
+        if message.text == "/start":
+            if (not db.user_exists(message.from_user.id)):
+                db.add_user(message.from_user.id)
+                await bot.send_message(message.from_user.id, 'Укажите свой ник, только латинскими буквами', reply_markup=types.ReplyKeyboardRemove())
+
+            else:
+                await bot.send_message(message.from_user.id, 'Вы уже зарегестрированны', reply_markup=nav.mainMenu)
+                await clientState.start.set()
+        else:
+            if db.get_signup(message.from_user.id) == "setnickname":
+                if (len(message.text) > 15):
+                        await bot.send_message(message.from_user.id, 'Ник не должен превышать 15 символов')
+                elif "@" in message.text or "/" in message.text:
+                        await bot.send_message(message.from_user.id, 'Хватит использовать запрещенные символы')
+                else:
+                        db.set_nickname(message.from_user.id, message.text)
+                        db.set_signup(message.from_user.id, "Done")
+                        await clientState.start.set()
+                        await bot.send_message(message.from_user.id, "вы завершили регистрацию", reply_markup=nav.mainMenu)
+            else:
+                await bot.send_message(message.from_user.id, "И что это может значить?")
+                await bot.send_message(message.from_user.id, "Теперь вы в главном меню\nПопробуй снова", reply_markup=nav.mainMenu)
+                await clientState.start.set()
+
+
+
+
+
+
+if __name__ == '__main__':
+    executor.start_polling(dp, skip_updates=True)
+
