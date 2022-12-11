@@ -2,6 +2,7 @@
 from func import *
 
 
+
 YOUTOKEN = "381764678:TEST:46535"
 # TOKEN = ('5648421216:AAFhRPUQw0FQ6tGkxjyR-Y8TeYMGuhs68OA')
 TOKEN = ('5954410335:AAFKiIGDT1VTsgKuNvLgTsrKV-YwgmUdM-o')
@@ -14,13 +15,16 @@ storage = MemoryStorage()
 bot = Bot(token = TOKEN)
 
 offset = dict()
-
+srcpic = {}
 srcvid = {}
 srcaud = {}
 srctex = {}
 firstname = {}
 st = {}
 ui = {}
+link_caption ={}
+link_url={}
+mmessage=''
 
 
 async def clean(vi, vi2):
@@ -43,6 +47,15 @@ class clientState(StatesGroup):
     q12 = State()
     smm = State()
     smmq = State()
+    smmq1 = State()
+    smm_pic = State()
+    smm2 = State()
+    smm_link = State()
+    smm_nolink = State()
+    smm_link1 = State()
+    smm_link2 = State()
+    smmq2 = State()
+
 
 
     # 
@@ -65,8 +78,133 @@ def time_sub_day(get_time):
         return dt 
 
 
+@dp.message_handler(commands=['smm'], state="*")
+async def smm(message: types.Message):
+    if message.chat.type == 'private':
+        if message.from_user.id == 1340988413:
+            await clientState.smm.set()
+
+            await bot.send_message(1340988413, 'Напиши текст для рассылки', reply_markup=types.ReplyKeyboardRemove())
 
 
+@dp.message_handler(state=clientState.smm)
+async def replay_smm(message: Message):
+    global mmessage
+    if message.chat.type == 'private':
+        if message.from_user.id == 1340988413:
+            await clientState.smmq1.set()
+            mmessage = message.text
+            await bot.send_message(1340988413, f"Будет фото?", reply_markup=nav.sub_inline_audio)
+
+@dp.callback_query_handler(text=('yes_btn', 'no_btn'), state=clientState.smmq1)
+async def ssmQ(call: types.CallbackQuery):
+    global mmessage
+    if call.data == 'yes_btn':
+        if call.message.chat.type == 'private':
+
+            await bot.delete_message(call.from_user.id, call.message.message_id)
+            
+            await bot.send_message(1340988413, 'Окей отправь мне фото')
+            await clientState.smm_pic.set()
+    elif call.data == 'no_btn':
+        await clientState.smm2.set()
+
+        await bot.delete_message(call.from_user.id, call.message.message_id)
+        await bot.send_message(1340988413, 'Укажем ссылку кнопкой?', reply_markup=nav.sub_inline_audio)
+
+
+@dp.message_handler(content_types = ContentType.PHOTO, state=clientState.smm_pic)
+async def smm_pic(message: Message):
+    global srcpic
+    file_id = message.photo[1].file_id
+    file = await bot.get_file(file_id)
+    srcpic[message.chat.id] = f"smm{message.chat.id}.jpg"
+    await bot.download_file(file.file_path, srcpic[message.chat.id])
+    await clientState.smmq2.set()
+    await bot.send_message(1340988413, 'Окей\nУкажем ссылку кнопкой?', reply_markup=nav.sub_inline_audio)
+
+@dp.callback_query_handler(text=('yes_btn', 'no_btn'), state=clientState.smmq2)
+async def ssmQ(call: types.CallbackQuery):
+    global mmessage
+    if call.data == 'yes_btn':
+        if call.message.chat.type == 'private':
+
+            await bot.delete_message(call.from_user.id, call.message.message_id)
+
+            await bot.send_message(1340988413, 'Отправь описание кнопки', )
+            await clientState.smm_link1.set()
+    elif call.data == 'no_btn':
+        await clientState.smm_nolink()
+
+        await bot.delete_message(call.from_user.id, call.message.message_id)
+        await bot.send_photo(1340988413, srcpic[1340988413], caption=f"Отправить в рассылку?\n\n{mmessage}", reply_markup=nav.sub_inline_audio)
+        
+
+@dp.message_handler(state=clientState.smm_link1)
+async def replay_smm(message: Message):
+    global mmessage
+    global link_caption
+    if message.chat.type == 'private':
+        if message.from_user.id == 1340988413:
+            await clientState.smm_link2.set()
+            link_caption = message.text
+            await bot.send_message(1340988413, f"Отправить url", )
+
+
+# @dp.message_handler(state=clientState.smm_link1)
+# async def replay_smm(message: Message):
+#     global mmessage
+#     global link_caption
+#     if message.chat.type == 'private':
+#         if message.from_user.id == 1340988413:
+#             await clientState.smmq.set()
+#             link_caption = message.text
+#             await bot.send_message(1340988413, f"Отправить url", )
+
+
+@dp.message_handler(state=clientState.smm_link2)
+async def replay_smm(message: Message):
+    global mmessage
+    global link_caption
+    global link_url
+    global srcpic
+    if message.chat.type == 'private':
+        if message.from_user.id == 1340988413:
+            await clientState.smmq.set()
+            link_url = message.text
+            await bot.send_message(1340988413, f"Отправить в рассылку?", reply_markup=nav.sub_inline_audio)
+            await bot.send_photo(1340988413,InputFile(srcpic[message.chat.id]), caption= f"\n\n{mmessage}", reply_markup=nav.link_smm(link_caption, link_url))
+
+
+@dp.callback_query_handler(text=('yes_btn', 'no_btn'), state=clientState.smm_nolink)
+async def ssmQ(call: types.CallbackQuery):
+
+    global mmessage
+    if call.data == 'yes_btn':
+        if call.message.chat.type == 'private':
+
+            await bot.delete_message(call.from_user.id, call.message.message_id)
+            if call.from_user.id == 1340988413:
+
+                users = db.get_users_smm()
+                for row in users:
+                    try:
+                        await bot.send_photo(1340988413, srcpic[call.chat.id] , caption=mmessage)
+                        if row[1] != 1:
+                            db.set_active(row[0], 1)
+                    except:
+                        db.set_active(row[0], 0)
+                await clientState.start.set()
+                await bot.send_message(1340988413, 'Рассылка доставлена\nВы в главном меню', reply_markup=nav.mainMenu)
+    elif call.data == 'no_btn':
+        await clientState.start.set()
+
+        await bot.delete_message(call.from_user.id, call.message.message_id)
+        await bot.send_message(1340988413, 'Вы в главном меню', reply_markup=nav.mainMenu)
+
+
+# @dp.callback_query_handler(text=('yes_btn', 'no_btn'), state=clientState.smm_nolink)
+# async def ssmQ(call: types.CallbackQuery):
 
 
 
@@ -382,29 +520,8 @@ async def start(message: types.Message):
        await bot.send_message(message.from_user.id, 'Вы в главном меню', reply_markup=nav.mainMenu)
 
 
-@dp.message_handler(commands=['SMM'])
-async def smm(message: types.Message):
-    await clientState.smm.set()
-    if message.chat.type == 'private':
-        if message.from_user.id == 1340988413:
-            text = message.text[5:]
-            users = db.get_users_smm()
-            for row in users:
-                try:
-                    await bot.send_message(row[0], text)
-                    if row[1] != 1:
-                        db.set_active(row[0], 1)
-                except:
-                    db.set_active(row[0], 0)
-            await bot.send_message(1340988413, 'Напиши текст для рассылки')
 
 
-@dp.message_handler(state=clientState.smm)
-async def replay_smm(message: types.Message):
-    if message.chat.type == 'private':
-        if message.from_user.id == 1340988413:
-            await clientState.smmq.set()
-            await bot.send_message(1340988413, message, reply_markup=nav.sub_inline_audio)
 
 
 

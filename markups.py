@@ -31,3 +31,8 @@ nobtn = InlineKeyboardButton(text="Не нужно", callback_data="no_btn")
 
 sub_inline_audio.add(yesbtn, nobtn)
 
+def link_smm(text1, url1):
+    linkurldone= InlineKeyboardMarkup(row_width=1)
+    link_url = InlineKeyboardButton( text=text1, url=url1)
+    return linkurldone.add(link_url)
+
