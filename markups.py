@@ -1,11 +1,11 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
-
+refer = KeyboardButton('Рефералы')
 btnProfile = KeyboardButton ('Профиль')
 btnSub = KeyboardButton ('Подписка')
 sozdatbtn = KeyboardButton('СОЗДАТЬ КРУГ')
 mainMenu = ReplyKeyboardMarkup(resize_keyboard=True)
-mainMenu.add(btnProfile, btnSub, sozdatbtn)
+mainMenu.add(btnProfile, btnSub, sozdatbtn, refer)
 
 # ______________________________
 btnout = KeyboardButton('В главное меню')
@@ -16,13 +16,22 @@ btnout = KeyboardButton('Назад')
 backout = ReplyKeyboardMarkup(resize_keyboard=True)
 backout.add(btnout)
 
+btnoutdone = KeyboardButton('Done')
+backout45 = ReplyKeyboardMarkup(resize_keyboard=True)
+backout45.add(btnoutdone)
+
 
 
 
 sub_inline = InlineKeyboardMarkup(row_width=1)
-btn_SubmMonth = InlineKeyboardButton( text= " 1 Месяц за 80 руб", callback_data="submonth")
+btn_SubmMonth = InlineKeyboardButton( text= "1 Месяц за 80 руб", callback_data="submonth")
 
-sub_inline.insert(btn_SubmMonth)
+sub_inline.add(btn_SubmMonth)
+
+sub_inline2 = InlineKeyboardMarkup(row_width=1)
+btn_SubmMonth3 = InlineKeyboardButton( text= "🔥3 МЕСЯЗА ЗА 150 руб🔥", callback_data="submonth3")
+
+sub_inline2.add( btn_SubmMonth3)
 
 
 sub_inline_audio = InlineKeyboardMarkup(row_width=0.5)

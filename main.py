@@ -1,9 +1,12 @@
 
 from func import *
 
+from aiogram.dispatcher.filters import Command
 
 
-YOUTOKEN = "381764678:TEST:46535"
+
+
+YOUTOKEN = "390540012:LIVE:28953"
 # TOKEN = ('5648421216:AAFhRPUQw0FQ6tGkxjyR-Y8TeYMGuhs68OA')
 TOKEN = ('5954410335:AAFKiIGDT1VTsgKuNvLgTsrKV-YwgmUdM-o')
 Configuration.account_id =  506751
@@ -22,9 +25,12 @@ srctex = {}
 firstname = {}
 st = {}
 ui = {}
+link = 0
+pic = 0
 link_caption ={}
 link_url={}
 mmessage=''
+file_id1 = {}
 
 
 async def clean(vi, vi2):
@@ -55,6 +61,8 @@ class clientState(StatesGroup):
     smm_link1 = State()
     smm_link2 = State()
     smmq2 = State()
+    done= State()
+    smmq3 = State()
 
 
 
@@ -80,15 +88,20 @@ def time_sub_day(get_time):
 
 @dp.message_handler(commands=['smm'], state="*")
 async def smm(message: types.Message):
+    global link
+    global pic
+    link = 0
+    pic = 0
     if message.chat.type == 'private':
         if message.from_user.id == 1340988413:
             await clientState.smm.set()
+
 
             await bot.send_message(1340988413, 'Напиши текст для рассылки', reply_markup=types.ReplyKeyboardRemove())
 
 
 @dp.message_handler(state=clientState.smm)
-async def replay_smm(message: Message):
+async def replay_smm1(message: Message):
     global mmessage
     if message.chat.type == 'private':
         if message.from_user.id == 1340988413:
@@ -99,15 +112,16 @@ async def replay_smm(message: Message):
 @dp.callback_query_handler(text=('yes_btn', 'no_btn'), state=clientState.smmq1)
 async def ssmQ(call: types.CallbackQuery):
     global mmessage
+    global pic
     if call.data == 'yes_btn':
         if call.message.chat.type == 'private':
-
+            pic = 1
             await bot.delete_message(call.from_user.id, call.message.message_id)
             
             await bot.send_message(1340988413, 'Окей отправь мне фото')
             await clientState.smm_pic.set()
     elif call.data == 'no_btn':
-        await clientState.smm2.set()
+        await clientState.smmq2.set()
 
         await bot.delete_message(call.from_user.id, call.message.message_id)
         await bot.send_message(1340988413, 'Укажем ссылку кнопкой?', reply_markup=nav.sub_inline_audio)
@@ -116,28 +130,29 @@ async def ssmQ(call: types.CallbackQuery):
 @dp.message_handler(content_types = ContentType.PHOTO, state=clientState.smm_pic)
 async def smm_pic(message: Message):
     global srcpic
-    file_id = message.photo[1].file_id
-    file = await bot.get_file(file_id)
-    srcpic[message.chat.id] = f"smm{message.chat.id}.jpg"
-    await bot.download_file(file.file_path, srcpic[message.chat.id])
+    global file_id1
+    file_id1 = message.photo[-1].file_id
+    # file = await bot.get_file(file_id)
+    # srcpic[message.chat.id] = f"smm{message.chat.id}.jpg"
+    # await bot.download_file(file.file_path, srcpic[message.chat.id])
     await clientState.smmq2.set()
     await bot.send_message(1340988413, 'Окей\nУкажем ссылку кнопкой?', reply_markup=nav.sub_inline_audio)
 
 @dp.callback_query_handler(text=('yes_btn', 'no_btn'), state=clientState.smmq2)
-async def ssmQ(call: types.CallbackQuery):
+async def ssmQ1(call: types.CallbackQuery):
     global mmessage
+    global link
     if call.data == 'yes_btn':
         if call.message.chat.type == 'private':
-
+            link = 1
             await bot.delete_message(call.from_user.id, call.message.message_id)
 
             await bot.send_message(1340988413, 'Отправь описание кнопки', )
             await clientState.smm_link1.set()
     elif call.data == 'no_btn':
-        await clientState.smm_nolink()
-
+        await clientState.done.set()
         await bot.delete_message(call.from_user.id, call.message.message_id)
-        await bot.send_photo(1340988413, srcpic[1340988413], caption=f"Отправить в рассылку?\n\n{mmessage}", reply_markup=nav.sub_inline_audio)
+        await bot.send_message(1340988413,  "Нажми на кнопку ниже", reply_markup=nav.backout45)
         
 
 @dp.message_handler(state=clientState.smm_link1)
@@ -163,44 +178,134 @@ async def replay_smm(message: Message):
 
 
 @dp.message_handler(state=clientState.smm_link2)
-async def replay_smm(message: Message):
+async def replay_smm2(message: Message):
     global mmessage
     global link_caption
     global link_url
     global srcpic
     if message.chat.type == 'private':
         if message.from_user.id == 1340988413:
-            await clientState.smmq.set()
+            await clientState.done.set()
             link_url = message.text
-            await bot.send_message(1340988413, f"Отправить в рассылку?", reply_markup=nav.sub_inline_audio)
-            await bot.send_photo(1340988413,InputFile(srcpic[message.chat.id]), caption= f"\n\n{mmessage}", reply_markup=nav.link_smm(link_caption, link_url))
+            await bot.send_message(1340988413, "Нажми на кнопку ниже", reply_markup=nav.backout45)
 
 
-@dp.callback_query_handler(text=('yes_btn', 'no_btn'), state=clientState.smm_nolink)
-async def ssmQ(call: types.CallbackQuery):
-
+@dp.message_handler(state=clientState.done)
+async def publick(message: Message):
+    global link
+    global pic
     global mmessage
+    global link_caption
+    global link_url
+    global srcpic
+    global file_id1
+    
+    if message.text == 'Done':
+        await clientState.smmq3.set()
+        await bot.delete_message(message.from_user.id, (message.message_id-1))
+        if pic == 1:
+            if link == 1:
+                await bot.send_photo(1340988413, photo=file_id1, caption=mmessage, reply_markup=nav.link_smm(link_caption, link_url))
+                await bot.send_message(1340988413, "Publick?", reply_markup=nav.sub_inline_audio)
+            elif link == 0:
+                await bot.send_photo(1340988413, photo=file_id1, caption=mmessage)
+                await bot.send_message(1340988413, "Publick?", reply_markup=nav.sub_inline_audio)
+        elif pic == 0:
+                if link == 1:
+                    await bot.send_message(1340988413,  f"{mmessage}", reply_markup=nav.link_smm(link_caption, link_url))
+                    await bot.send_message(1340988413, "Publick?", reply_markup=nav.sub_inline_audio)
+                elif link == 0:
+                    await bot.send_message(1340988413,  f"{mmessage}")
+                    await bot.send_message(1340988413, "Publick?", reply_markup=nav.sub_inline_audio)
+
+
+@dp.callback_query_handler(text=('yes_btn', 'no_btn'), state=clientState.smmq3)
+async def ssmQ1(call: types.CallbackQuery):
+    global mmessage
+    global link
+    await bot.delete_message(call.from_user.id, (call.message.message_id-1))
+
+    await bot.delete_message(call.from_user.id, (call.message.message_id))
     if call.data == 'yes_btn':
-        if call.message.chat.type == 'private':
 
-            await bot.delete_message(call.from_user.id, call.message.message_id)
-            if call.from_user.id == 1340988413:
+        users = db.get_users_smm()
+        for row in users:
+                
+            
+                if pic == 1:
+                    if link == 1:
+                        try:
+                            await bot.send_photo(row[0], photo=file_id1, caption=mmessage, reply_markup=nav.link_smm(link_caption, link_url))
+                            if row[1] != 1:
+                                db.set_active(row[0], 1)
+                        except:
+                            db.set_active(row[0], 0)
+                    elif link == 0:
+                            try:
+                                await bot.send_photo(row[0], photo=file_id1, caption=mmessage)
+                                if row[1] != 1:
+                                    db.set_active(row[0], 1)
+                            except:
+                                db.set_active(row[0], 0)
 
-                users = db.get_users_smm()
-                for row in users:
-                    try:
-                        await bot.send_photo(1340988413, srcpic[call.chat.id] , caption=mmessage)
-                        if row[1] != 1:
-                            db.set_active(row[0], 1)
-                    except:
-                        db.set_active(row[0], 0)
-                await clientState.start.set()
-                await bot.send_message(1340988413, 'Рассылка доставлена\nВы в главном меню', reply_markup=nav.mainMenu)
+                elif pic == 0:
+                        if link == 1:
+                            try:
+                                await bot.send_message(row[0],  f"{mmessage}", reply_markup=nav.link_smm(link_caption, link_url))
+                                if row[1] != 1:
+                                    db.set_active(row[0], 1)
+                            except:
+                                db.set_active(row[0], 0)
+                        elif link == 0:
+                            try:
+                                await bot.send_message(row[0],  f"{mmessage}")
+                                if row[1] != 1:
+                                    db.set_active(row[0], 1)
+                            except:
+                                db.set_active(row[0], 0)
+
+        await clientState.start.set()
+        await bot.send_message(1340988413, 'Рассылка доставлена\nВы в главном меню', reply_markup=nav.mainMenu)
+
     elif call.data == 'no_btn':
         await clientState.start.set()
+        await bot.send_message(1340988413, '\nВы в главном меню', reply_markup=nav.mainMenu)
 
-        await bot.delete_message(call.from_user.id, call.message.message_id)
-        await bot.send_message(1340988413, 'Вы в главном меню', reply_markup=nav.mainMenu)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # if call.data == 'yes_btn':
+    #     if call.message.chat.type == 'private':
+
+    #         await bot.delete_message(call.from_user.id, call.message.message_id)
+    #         if call.from_user.id == 1340988413:
+
+    #             users = db.get_users_smm()
+    #             for row in users:
+    #                 try:
+    #                     await bot.send_photo(1340988413, srcpic[call.chat.id] , caption=mmessage)
+    #                     if row[1] != 1:
+    #                         db.set_active(row[0], 1)
+    #                 except:
+    #                     db.set_active(row[0], 0)
+    #             await clientState.start.set()
+    #             await bot.send_message(1340988413, 'Рассылка доставлена\nВы в главном меню', reply_markup=nav.mainMenu)
+    # elif call.data == 'no_btn':
+    #     await clientState.start.set()
+
+    #     await bot.delete_message(call.from_user.id, call.message.message_id)
+    #     await bot.send_message(1340988413, 'Вы в главном меню', reply_markup=nav.mainMenu)
 
 
 # @dp.callback_query_handler(text=('yes_btn', 'no_btn'), state=clientState.smm_nolink)
@@ -229,6 +334,8 @@ async def bot_message(message: types.Message, state: FSMContext):
             
                 await bot.send_message(message.from_user.id, user_nickname + user_sub, reply_markup=nav.mainMenu1)
                 await bot.send_message(message.from_user.id,  'Чтобы пользоваться ботом без ограниченй, предлагаем оформить подписку по кнопке ниже😏', reply_markup=nav.sub_inline)
+                await bot.send_message(message.from_user.id,  '🎄Новогоднее предложение🎁', reply_markup=nav.sub_inline2)
+
             else:
                 user_sub = time_sub_day(db.get_time_sub(message.from_user.id))
                 user_sub = "\n Тариф: VIP❤️\n Действителен еще " + user_sub
@@ -242,21 +349,32 @@ async def bot_message(message: types.Message, state: FSMContext):
                 user_tarif = "Ваш тариф: FREE"
                 await bot.send_message(message.from_user.id, user_tarif, reply_markup=nav.mainMenu1)
                 await bot.send_message(message.from_user.id,  'Чтобы пользоваться ботом без ограниченй, предлагаем оформить подписку по кнопке ниже😏', reply_markup=nav.sub_inline)
+                await bot.send_message(message.from_user.id,  '🎄Новогоднее предложение🎁', reply_markup=nav.sub_inline2)
+
             else:
                 user_sub = time_sub_day(db.get_time_sub(message.from_user.id))
                 user_sub = "\n Тариф: VIP\n Действителен еще " + user_sub
                 await bot.send_message(message.from_user.id,  user_sub, reply_markup=nav.mainMenu1)
 
         elif message.text == "СОЗДАТЬ КРУГ":
-            if db.get_sub_status(message.from_user.id) == False:
+            ui = message.from_user.id
+            if db.get_sub_status(message.from_user.id) == False and db.get_free(message.from_user.id) == 0:
                 st = False
              
                 await bot.send_message(message.from_user.id,  "В вашем тарифе доступны круги до 30 сек.\n\nДавай начнем, отправь мне любое видео☺️", reply_markup=nav.mainMenu1)
                 await clientState.videost.set()
-            elif  db.get_sub_status(message.from_user.id) == True:
+            elif db.get_sub_status(message.from_user.id) == True or db.get_free(message.from_user.id) > 0:
                 st = True
                 await bot.send_message(message.from_user.id,  "В вашем тарифе ограничения отсутсвуют\n\nДавай начнем, отправь мне любое видео☺️", reply_markup=nav.mainMenu1)
                 await clientState.videost.set()
+        
+        elif message.text == "Рефералы":
+            await clientState.otmen.set()
+            ref=  str(db.get_referal(message.from_user.id))
+            ref_free = str(db.get_free(message.from_user.id))
+            await bot.send_message(message.from_user.id,  f"Колличесвто приглашенных зайчиков: {ref}\n\nКоличество доступных бесплатных кругов: {ref_free}\n\n\nЧтобы заработать бесплатные круги, пригласи новых участниковв используя эту ссылку\nhttps://t.me/CCircle_bot?start={message.from_user.id}\n\nКак только кто-то зарегистрируется по этой ссылке, ты получишь уведомление❤️" , reply_markup=nav.mainMenu1)
+            # await bot.send_message(message.from_user.id, f"Чтобы заработать бесплатные круги, пригласи новых участниковв используя эту ссылку\nhttps://CCircle_bot?start={message.from_user.id}\nКак только кто-то зарегистрируется по этой ссылке, ты получишь уведомление❤️")
+
 
 
 @dp.message_handler(state=clientState.otmen)
@@ -264,9 +382,10 @@ async def start(message: types):
 
     if message.text == "В главное меню":
         await clientState.start.set()
-
-        await bot.delete_message(message.from_user.id, (message.message_id-1))
+        
         await bot.send_message(message.from_user.id, 'Вы в главном меню😏', reply_markup=nav.mainMenu)
+        await bot.delete_message(message.from_user.id, (message.message_id-1))
+        await bot.delete_message(message.from_user.id, (message.message_id-2))
 
 
 @dp.callback_query_handler(text='submonth', state="*")
@@ -276,8 +395,21 @@ async def submonth ( call: types.CallbackQuery):
     global srctex
     global firstname
     await clientState.otmen.set()
+    await bot.delete_message(call.from_user.id, (call.message.message_id+1))
     await bot.delete_message(call.from_user.id, call.message.message_id)
     await bot.send_invoice(chat_id=call.from_user.id, title="Подписка на", description="данная подписка дает возможность пользоваться ботом целый месяц без ограничейний", payload="month_sub", provider_token=YOUTOKEN, currency="RUB", start_parameter="test_bot", prices=[{"label": "RUB", "amount": 8000}])
+
+
+@dp.callback_query_handler(text='submonth3', state="*")
+async def submonth(call: types.CallbackQuery):
+    global srcvid
+    global srcaud
+    global srctex
+    global firstname
+    await clientState.otmen.set()
+    await bot.delete_message(call.from_user.id, (call.message.message_id-1))
+    await bot.delete_message(call.from_user.id, call.message.message_id)
+    await bot.send_invoice(chat_id=call.from_user.id, title="Подписка на", description="данная подписка дает возможность пользоваться ботом целых 3 месяца без ограничейний", payload="month_sub3", provider_token=YOUTOKEN, currency="RUB", start_parameter="test_bot", prices=[{"label": "RUB", "amount": 15000}])
 
 
 @dp.pre_checkout_query_handler(state=clientState.all_states)
@@ -298,6 +430,21 @@ async def process_pay(message: Message):
         db.set_time_sub(message.from_user.id, time_sub)
         await clientState.start.set()
         await bot.send_message(message.from_user.id, "Вы подписались на тариф VIP❤️🤤", reply_markup=nav.mainMenu)
+
+
+@dp.message_handler(content_types=ContentType.SUCCESSFUL_PAYMENT, state="*")
+async def process_pay(message: Message):
+    global srcvid
+    global srcaud
+    global srctex
+    global firstname
+    if message.successful_payment.invoice_payload == "month_sub3":
+
+        # подписываем пользователя
+        time_sub = int(time.time()) + days_to_sec(60)
+        db.set_time_sub(message.from_user.id, time_sub)
+        await clientState.start.set()
+        await bot.send_message(message.from_user.id, "Вы подписались на тариф VIP❤️🤤\nНа 3 месяца", reply_markup=nav.mainMenu)
 
 
 
@@ -343,9 +490,10 @@ async def check_video(message: Message):
 async def start(message: types):
    
    if message.text == "В главное меню":
-        await bot.delete_message(message.from_user.id, message.message_id)
+        
         await clientState.start.set()
         await bot.send_message(message.from_user.id, 'Вы в главном меню❤️', reply_markup=nav.mainMenu)
+        await bot.delete_message(message.from_user.id, (message.message_id-1))
     
 
 
@@ -373,7 +521,7 @@ async def no_btn(call: types.CallbackQuery):
     global st
     global ui
 
-    if  st == False:
+    if st == False and db.get_free(call.message.from_user.id) == 0:
         await clientState.start.set()
         await bot.send_message(ui, 'Отлично\nУже загружаю круг 🚛  ')
         na = str(call.message.chat.id) + ".mp4"
@@ -382,8 +530,8 @@ async def no_btn(call: types.CallbackQuery):
         await bot.send_message(ui,  'Чтобы убрать водяной знак и загружать видео длиной в 1 минуту перейдите на тариф VIP по кнопке ниже😏', reply_markup=nav.sub_inline)
         await bot.send_message(ui, text=krug1(db.get_nickname(ui)))
         await clean(srcvid[ui], na)
-
-    elif st == True:
+        
+    elif st == True or  db.get_free(call.message.from_user.id) > 0:
         await clientState.start.set()
         await bot.send_message(ui, 'Отлично\nУже загружаю круг 🚛  ')
         na = str(call.message.chat.id) + ".mp4"
@@ -392,6 +540,8 @@ async def no_btn(call: types.CallbackQuery):
         user = db.get_nickname(ui)
         await bot.send_message(ui, krug1(db.get_nickname(ui)))
         await clean(srcvid[ui], na)
+        if db.get_free(call.message.from_user.id) > 0:
+            await db.minus_ref(call.message.from_user.id)
 
 
 @dp.message_handler(state=clientState.audiost)
@@ -480,7 +630,7 @@ async def get_sec(message: Message):
         await bot.send_message(message.from_user.id, 'Окей😏', reply_markup=nav.backout)
         await bot.send_message(message.from_user.id, '\nЖелаешь добвать аудио?', reply_markup=nav.sub_inline_audio)
     elif message.text.isdigit() == True:
-        if db.get_sub_status(message.from_user.id) == False:
+        if db.get_sub_status(message.from_user.id) == False and db.get_free(message.from_user.id) == 0:
 
             await bot.send_message(message.chat.id, 'Отлично\nУже загружаю круг🚛❤️ ')
             na = str(message.chat.id) + ".mp4"
@@ -501,6 +651,8 @@ async def get_sec(message: Message):
             await bot.send_video_note(message.from_user.id, InputFile(na), reply_markup=nav.mainMenu)
             await bot.send_message(message.from_user.id, text=krug1(db.get_nickname(message.from_user.id)))
             await cleanall(srcvid[ui], na, srcaud[ui])
+            if db.get_free(message.from_user.id) > 0:
+                db.minus_ref(message.from_user.id)
             await clientState.start.set()
     
     else:
@@ -535,9 +687,17 @@ async def start(message: types.Message):
         global srcaud
         global srctex
         global firstname
-        if message.text == "/start":
+        if "/start" in message.text:
             if (not db.user_exists(message.from_user.id)):
-                db.add_user(message.from_user.id)
+                start_command = message.text
+                referal_id = str(start_command[7:])
+                if str(referal_id) != '':
+
+                    db.add_user(message.from_user.id, referal_id)
+                    db.set_ref(referal_id)
+                    await bot.send_message(referal_id, "У вас новый реферал, а это значит что вы можете создать круг бесплатно\n\nКоличество рефералов вы можете увидеть в главном меню, на вкладке рефералы")
+                else:
+                    db.add_user(message.from_user.id)
                 await bot.send_message(message.from_user.id, 'Укажите свой ник, только латинскими буквами', reply_markup=types.ReplyKeyboardRemove())
 
             else:
@@ -555,8 +715,8 @@ async def start(message: types.Message):
                         await clientState.start.set()
                         await bot.send_message(message.from_user.id, "вы завершили регистрацию", reply_markup=nav.mainMenu)
             else:
-                await bot.send_message(message.from_user.id, "И что это может значить?")
-                await bot.send_message(message.from_user.id, "Теперь вы в главном меню\nПопробуй снова", reply_markup=nav.mainMenu)
+                await bot.send_message(message.from_user.id, "И что это может значить?", reply_markup=nav.mainMenu)
+                await bot.send_message(message.from_user.id, "Теперь вы в главном меню\nПопробуй снова")
                 await clientState.start.set()
 
 

@@ -6,9 +6,16 @@ class Database:
         self.connection = sqlite3.connect(db_file)
         self.cursor = self.connection.cursor()
 
-    def add_user(self, user_id):
+    def add_user(self, user_id, referall_id=None):
         with self.connection:
-           return self.cursor.execute('INSERT INTO "users" ("user_id") VALUES (?)', (user_id,))
+            if referall_id !=None:
+                return self.cursor.execute('INSERT INTO "users" ("user_id", "referal_id") VALUES (?, ?)', (user_id, referall_id,))
+
+            else:
+                return self.cursor.execute('INSERT INTO "users" ("user_id") VALUES (?)', (user_id,))
+
+
+
 
     def user_exists(self, user_id):
         with self.connection:
@@ -85,5 +92,37 @@ class Database:
     #             tarif = row[0]
     #         return tarif
 
+    def set_ref(self, user_id):
+        with self.connection:
+            result1 = self.cursor.execute('SELECT "count_ref" FROM "users" WHERE "user_id" = ?', (user_id,)).fetchone()
+            for row in result1:
+                result1 = row
+            result1 = result1 +1
+            self.cursor.execute('UPDATE "users" SET "count_ref" = ? WHERE "user_id" = ?', (result1, user_id,))
+            result = self.cursor.execute('SELECT "ref_free" FROM "users" WHERE "user_id" = ?', (user_id,)).fetchall()
+            for row in result:
+                result = int(row[0])
+            result = result +1
+            self.cursor.execute('UPDATE "users" SET "ref_free" = ? WHERE "user_id" = ?', (result, user_id,))
 
+    def minus_ref(self, user_id):
+        with self.connection:
+            result = self.cursor.execute('SELECT "ref_free" FROM "users" WHERE "user_id" = ?', (user_id,)).fetchall()
+            for row in result:
+                result = int(row[0])
+            result = result -1
+            self.cursor.execute('UPDATE "users" SET "ref_free" = ? WHERE "user_id" = ?', (result, user_id,))
 
+    def get_free(self, user_id):
+        with self.connection:
+            result = self.cursor.execute('SELECT "ref_free" FROM "users" WHERE "user_id" = ?', (user_id,)).fetchall()
+            for row in result:
+                result = int(row[0])
+            return result
+
+    def get_referal(self, user_id):
+        with self.connection:
+            result1 = self.cursor.execute('SELECT "count_ref" FROM "users" WHERE "user_id" = ?', (user_id,)).fetchall()
+            for row in result1:
+                result1 = int(row[0])
+            return result1
