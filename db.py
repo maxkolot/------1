@@ -126,3 +126,10 @@ class Database:
             for row in result1:
                 result1 = int(row[0])
             return result1
+
+    def num_krug(self, k):
+        with self.connection:
+            result = self.cursor.execute('SELECT "num_krug" FROM "users" WHERE "user_id" = ?', (k,)).fetchone()
+            result = result[0] + 1
+            self.cursor.execute('UPDATE "users" SET "num_krug" = ? WHERE "user_id" = ?', (result, k,))
+            return result

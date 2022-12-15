@@ -3,6 +3,17 @@ from func import *
 
 from aiogram.dispatcher.filters import Command
 
+import logging
+import asyncio
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    filename="mylog.log",
+    format="%(asctime)s - %(module)s - %(levelname)s - %(funcName)s: %(lineno)d - %(message)s",
+    datefmt='%H:%M:%S',
+)
+
+logging.info('Hello')
 
 
 
@@ -31,6 +42,12 @@ link_caption ={}
 link_url={}
 mmessage=''
 file_id1 = {}
+cir = 0
+errors = 0
+
+
+async def clean1(vi):
+   os.remove(vi)
 
 
 async def clean(vi, vi2):
@@ -397,7 +414,7 @@ async def submonth ( call: types.CallbackQuery):
     await clientState.otmen.set()
     await bot.delete_message(call.from_user.id, (call.message.message_id+1))
     await bot.delete_message(call.from_user.id, call.message.message_id)
-    await bot.send_invoice(chat_id=call.from_user.id, title="Подписка на", description="данная подписка дает возможность пользоваться ботом целый месяц без ограничейний", payload="month_sub", provider_token=YOUTOKEN, currency="RUB", start_parameter="test_bot", prices=[{"label": "RUB", "amount": 8000}])
+    await bot.send_invoice(chat_id=call.from_user.id, title="Подписка на CCircle", description="данная подписка дает возможность пользоваться ботом целый месяц без ограничейний", payload="month_sub", provider_token=YOUTOKEN, currency="RUB", start_parameter="test_bot", prices=[{"label": "RUB", "amount": 8000}])
 
 
 @dp.callback_query_handler(text='submonth3', state="*")
@@ -409,7 +426,7 @@ async def submonth(call: types.CallbackQuery):
     await clientState.otmen.set()
     await bot.delete_message(call.from_user.id, (call.message.message_id-1))
     await bot.delete_message(call.from_user.id, call.message.message_id)
-    await bot.send_invoice(chat_id=call.from_user.id, title="Подписка на", description="данная подписка дает возможность пользоваться ботом целых 3 месяца без ограничейний", payload="month_sub3", provider_token=YOUTOKEN, currency="RUB", start_parameter="test_bot", prices=[{"label": "RUB", "amount": 15000}])
+    await bot.send_invoice(chat_id=call.from_user.id, title="Подписка на CCircle", description="данная подписка дает возможность пользоваться ботом целых 3 месяца без ограничейний", payload="month_sub3", provider_token=YOUTOKEN, currency="RUB", start_parameter="test_bot", prices=[{"label": "RUB", "amount": 15000}])
 
 
 @dp.pre_checkout_query_handler(state=clientState.all_states)
@@ -472,7 +489,8 @@ async def check_video(message: Message):
             video_number = 0  # Number video file
             # If the file exists, add one to the number
 
-            await bot.send_message(message.from_user.id, 'Отлично☺️!', reply_markup=nav.backout)
+            await bot.send_message(message.from_user.id, 'Отлично☺️!\n ', reply_markup=nav.backout)
+            # await asyncio.sleep(20)
             await bot.send_message(message.from_user.id, '\nЖелаешь добвать аудио?', reply_markup=nav.sub_inline_audio)
             user_nickname =   db.get_nickname(message.from_user.id)
             firstname = str(message.from_user.id).format(message.from_user)
@@ -520,28 +538,54 @@ async def no_btn(call: types.CallbackQuery):
     global firstname
     global st
     global ui
-
-    if st == False and db.get_free(call.message.from_user.id) == 0:
+    global cir
+    global errors
+    if st == False and db.get_free(ui) == 0:
         await clientState.start.set()
-        await bot.send_message(ui, 'Отлично\nУже загружаю круг 🚛  ')
+        await bot.send_message(ui, 'Отлично\nУже загружаю круг 🚛  ', reply_markup=types.ReplyKeyboardRemove())
+        await asyncio.sleep(20)
         na = str(call.message.chat.id) + ".mp4"
-        circleOrig_30(srcvid[call.message.chat.id], na)
+        try:
+            circleOrig_30(srcvid[call.message.chat.id], na)
+        except:
+
+            errors = errors +1
+            await bot.send_message(1340988413, f"Ошибка {errors}")
+            await bot.send_message(ui, 'Ваше видео битое\nВы в главном меню', reply_markup=nav.mainMenu)
+            await clientState.start.set()
+            await clean(srcvid[ui])
         await bot.send_video_note(ui, InputFile(na), reply_markup=nav.mainMenu)
         await bot.send_message(ui,  'Чтобы убрать водяной знак и загружать видео длиной в 1 минуту перейдите на тариф VIP по кнопке ниже😏', reply_markup=nav.sub_inline)
         await bot.send_message(ui, text=krug1(db.get_nickname(ui)))
-        await clean(srcvid[ui], na)
         
-    elif st == True or  db.get_free(call.message.from_user.id) > 0:
+        await bot.send_message(1340988413, f"Был создан круг\nИх уже {db.num_krug(1340988413)}")
+        await clean1(srcvid[ui])
+        
+    elif st == True or  db.get_free(ui) > 0:
         await clientState.start.set()
-        await bot.send_message(ui, 'Отлично\nУже загружаю круг 🚛  ')
+        await bot.send_message(ui, 'Отлично\nУже загружаю круг 🚛  ', reply_markup=types.ReplyKeyboardRemove())
+        await asyncio.sleep(20)
         na = str(call.message.chat.id) + ".mp4"
-        circleOrig(srcvid[call.message.chat.id], na)
+        try:
+            circleOrig(srcvid[call.message.chat.id], na)
+        except:
+
+            errors = errors +1
+            await bot.send_message(1340988413, f"Ошибка {errors}")
+            await bot.send_message(ui, 'Ваше видео битое\nВы в главном меню', reply_markup=nav.mainMenu)
+            await clientState.start.set()
+            await clean1(srcvid[ui])
+            
+
         await bot.send_video_note(ui, InputFile(na), reply_markup=nav.mainMenu)
         user = db.get_nickname(ui)
         await bot.send_message(ui, krug1(db.get_nickname(ui)))
+        
+        await bot.send_message(1340988413, f"Был создан круг\nИх уже {db.num_krug(1340988413)}")
         await clean(srcvid[ui], na)
-        if db.get_free(call.message.from_user.id) > 0:
-            await db.minus_ref(call.message.from_user.id)
+        k = db.get_free(ui)
+        if k > 0:
+             db.minus_ref(ui)
 
 
 @dp.message_handler(state=clientState.audiost)
@@ -622,6 +666,8 @@ async def get_sec(message: Message):
     global srcaud
     global srctex
     global firstname
+    global cir
+    global errors
 
     await bot.delete_message(message.from_user.id, (message.message_id-1))
     if message.text == "Назад":
@@ -632,24 +678,47 @@ async def get_sec(message: Message):
     elif message.text.isdigit() == True:
         if db.get_sub_status(message.from_user.id) == False and db.get_free(message.from_user.id) == 0:
 
-            await bot.send_message(message.chat.id, 'Отлично\nУже загружаю круг🚛❤️ ')
+            await bot.send_message(message.chat.id, 'Отлично\nУже загружаю круг🚛❤️ ', reply_markup=types.ReplyKeyboardRemove())
+            await asyncio.sleep(20)
             na = str(message.chat.id) + ".mp4"
             srctex[message.chat.id] = int(message.text)
-            circle_30(srcvid[message.chat.id], na, srcaud[message.chat.id], srctex[message.chat.id])
+            try:
+                circle_30(srcvid[message.chat.id], na, srcaud[message.chat.id], srctex[message.chat.id])
+            except:
+
+                errors = errors +1
+                await bot.send_message(1340988413, f"Ошибка {errors}")
+                await bot.send_message(ui, 'Ваше видео битое\nВы в главном меню', reply_markup=nav.mainMenu)
+                await clientState.start.set()
+                await clean(srcvid[ui],srcaud[ui])
             await bot.send_video_note(message.from_user.id, InputFile(na), reply_markup=nav.mainMenu)
             await cleanall(srcvid[ui], na, srcaud[ui])
+
+            
+            await bot.send_message(1340988413, f"Был создан круг\nИх уже {db.num_krug(1340988413)}")
             await bot.send_message(message.from_user.id,  'Чтобы убрать водяной знак и загружать видео длиной в 1 минуту перейдите на тариф VIP по кнопке ниже😏', reply_markup=nav.sub_inline)
             await bot.send_message(message.from_user.id, text=krug1(db.get_nickname(message.from_user.id)))
             await clientState.start.set()
         else:
 
-            await bot.send_message(message.chat.id, 'Отлично\nУже загружаю круг🚛❤️ ')
+            await bot.send_message(message.chat.id, 'Отлично\nУже загружаю круг🚛❤️ ', reply_markup=types.ReplyKeyboardRemove())
+            await asyncio.sleep(20)
             na = str(message.chat.id) + ".mp4"
             srctex[message.chat.id] = int(message.text)
-            circle_60(srcvid[message.chat.id], na,
+            try:
+                circle_60(srcvid[message.chat.id], na,
                     srcaud[message.chat.id], srctex[message.chat.id])
+            except:
+                errors = errors +1
+                await bot.send_message(1340988413, f"Ошибка {errors}")
+                await bot.send_message(ui, 'Ваше видео битое\nВы в главном меню', reply_markup=nav.mainMenu)
+                await clientState.start.set()
+                await clean(srcvid[ui], srcaud[ui])
             await bot.send_video_note(message.from_user.id, InputFile(na), reply_markup=nav.mainMenu)
             await bot.send_message(message.from_user.id, text=krug1(db.get_nickname(message.from_user.id)))
+
+            
+            await bot.send_message(1340988413, f"Был создан круг\nИх уже {db.num_krug(1340988413)}")
             await cleanall(srcvid[ui], na, srcaud[ui])
             if db.get_free(message.from_user.id) > 0:
                 db.minus_ref(message.from_user.id)
