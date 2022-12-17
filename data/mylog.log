@@ -86,3 +86,5 @@
 15:32:28 - api - DEBUG - make_request: 133 - Make request: "getUpdates" with data: "{'offset': 374963424, 'timeout': 20}" and files "None"
 15:32:48 - api - DEBUG - check_result: 95 - Response for getUpdates: [200] "'{"ok":true,"result":[]}'"
 15:32:48 - api - DEBUG - make_request: 133 - Make request: "getUpdates" with data: "{'offset': 374963424, 'timeout': 20}" and files "None"
+15:33:08 - api - DEBUG - check_result: 95 - Response for getUpdates: [200] "'{"ok":true,"result":[]}'"
+15:33:09 - api - DEBUG - make_request: 133 - Make request: "getUpdates" with data: "{'offset': 374963424, 'timeout': 20}" and files "None"
