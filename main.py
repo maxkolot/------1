@@ -8,7 +8,7 @@ import asyncio
 
 logging.basicConfig(
     level=logging.DEBUG,
-    filename="mylog.log",
+    filename="./data/mylog.log",
     format="%(asctime)s - %(module)s - %(levelname)s - %(funcName)s: %(lineno)d - %(message)s",
     datefmt='%H:%M:%S',
 )
@@ -124,7 +124,7 @@ class clientState(StatesGroup):
 dp = Dispatcher(bot, storage=storage)
 
 
-db = Database("dataBase.db")
+db = Database("./data/dataBase.db")
 
 def days_to_sec(days):
     return days * 24 * 60 * 60
@@ -602,7 +602,7 @@ async def check_video(message: Message):
             await clientState.q1.set()
             while (os.path.isfile(f"video{video_number}.mp4")):
                 video_number += 1
-            srcvid[message.chat.id] = f"video{video_number}.mp4"
+            srcvid[message.chat.id] = f"./data/video{video_number}.mp4"
             await bot.download_file(file.file_path, srcvid[message.chat.id])
 
             ui = message.from_user.id
@@ -752,7 +752,7 @@ async def xxxxacheck(message: Message):
     srcaud[message.chat.id] = src1
     while (os.path.isfile(f"audio{audio_number}.mp3")):
         audio_number += 1
-    srcaud[message.chat.id] = f"audio{audio_number}.mp3"
+    srcaud[message.chat.id] = f"./data/audio{audio_number}.mp3"
     await bot.download_file(file.file_path, srcaud[message.chat.id])
     await bot.send_message(message.from_user.id, '\nВыберите фрагмент трека,  с какой секунды его начать\nнапишите цифрой', reply_markup=nav.backout)
 
@@ -788,7 +788,7 @@ async def get_sec(message: Message):
 
             await bot.send_message(message.chat.id, 'Отлично\nУже загружаю круг🚛❤️ ', reply_markup=types.ReplyKeyboardRemove())
             await asyncio.sleep(20)
-            na = str(message.chat.id) + ".mp4"
+            na = "./data/" + str(message.chat.id) + ".mp4"
             srctex[message.chat.id] = int(message.text)
             try:
                 circle_30(srcvid[message.chat.id], na, srcaud[message.chat.id], srctex[message.chat.id])
@@ -813,7 +813,7 @@ async def get_sec(message: Message):
 
             await bot.send_message(message.chat.id, 'Отлично\nУже загружаю круг🚛❤️ ', reply_markup=types.ReplyKeyboardRemove())
             await asyncio.sleep(20)
-            na = str(message.chat.id) + ".mp4"
+            na = "./data/" + str(message.chat.id) + ".mp4"
             srctex[message.chat.id] = int(message.text)
             try:
                 circle_60(srcvid[message.chat.id], na,
