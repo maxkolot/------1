@@ -26,6 +26,43 @@ logging.basicConfig(level=logging.INFO)
 
 
 storage = MemoryStorage()
+
+
+message__i = {}
+
+async def add_and_clear_message(chat_id, message_id):
+    global message__i
+    if message__i.get(chat_id) == None:
+        message__i[chat_id] = []
+    message__i[chat_id].clear()
+    message__i[chat_id].append(message_id)
+
+
+async def add_message(chat_id, message_id):
+    global message__i
+    if message__i.get(chat_id) == None:
+        message__i[chat_id] = []
+    message__i[chat_id].append(message_id)
+
+
+async def delete_message(id):
+    global message__i
+    if message__i.get(id) != None:
+        for i in message__i[id]:
+
+            await bot.delete_message(id, (i))
+        message__i[id].clear()
+
+
+async def send_m(self, chat_id, message, reply_markup=None):
+
+   qq = await self.send_message(chat_id, message, reply_markup=reply_markup)
+   await add_message(chat_id, qq.message_id)
+
+
+
+
+Bot.send_m = send_m
 bot = Bot(token = TOKEN)
 
 offset = dict()
@@ -44,7 +81,7 @@ mmessage=''
 file_id1 = {}
 cir = 0
 errors = 0
-
+invois = {}
 
 async def clean1(vi):
    os.remove(vi)
@@ -101,6 +138,8 @@ def time_sub_day(get_time):
         dt = dt.replace('days', 'дней')
         dt = dt.replace('day', 'день')
         return dt 
+
+
 
 
 @dp.message_handler(commands=['smm'], state="*")
@@ -338,10 +377,16 @@ async def bot_message(message: types.Message, state: FSMContext):
     global firstname
     global st
     global ui
+    global message__i
     if message.chat.type == 'private':
 
 
         if message.text == "Профиль":
+
+            if invois.get(message.from_user.id) != None:
+                for i in invois[message.from_user.id]:
+                    await bot.delete_message(message.from_user.id, i)
+            invois.clear()
             await clientState.otmen.set()
             user_sub = time_sub_day(db.get_time_sub(message.from_user.id))
             if user_sub ==False:
@@ -349,73 +394,106 @@ async def bot_message(message: types.Message, state: FSMContext):
                 user = db.get_nickname(message.from_user.id)
                 user_nickname = "Ваш ник: " + db.get_nickname(message.from_user.id)
             
-                await bot.send_message(message.from_user.id, user_nickname + user_sub, reply_markup=nav.mainMenu1)
-                await bot.send_message(message.from_user.id,  'Чтобы пользоваться ботом без ограниченй, предлагаем оформить подписку по кнопке ниже😏', reply_markup=nav.sub_inline)
-                await bot.send_message(message.from_user.id,  '🎄Новогоднее предложение🎁', reply_markup=nav.sub_inline2)
+                await bot.send_m(message.from_user.id, user_nickname + user_sub, reply_markup=nav.mainMenu1)
+                invois[message.from_user.id] = []
+                qq = await bot.send_message(message.from_user.id,  'Чтобы пользоваться ботом без ограниченй, предлагаем оформить подписку по кнопке ниже😏', reply_markup=nav.sub_inline)
+                invois[message.from_user.id].append(qq.message_id)                
+                qq = await bot.send_message(message.from_user.id,  '🎄Новогоднее предложение🎁', reply_markup=nav.sub_inline2)
+                invois[message.from_user.id].append(qq.message_id)
+
 
             else:
+                mes_id_user = message.message_id 
                 user_sub = time_sub_day(db.get_time_sub(message.from_user.id))
                 user_sub = "\n Тариф: VIP❤️\n Действителен еще " + user_sub
                 user_nickname = "Ваш ник: " + db.get_nickname(message.from_user.id)+"🤤"
-                await bot.send_message(message.from_user.id, user_nickname + user_sub, reply_markup=nav.mainMenu1)
+                await bot.send_m(message.from_user.id, user_nickname + user_sub, reply_markup=nav.mainMenu1)
+                
+                # message__i = qq.message_id
             
 
         elif  message.text == "Подписка":
+            if invois.get(message.from_user.id) != None:
+                for i in invois[message.from_user.id]:
+                    await bot.delete_message(message.from_user.id, i)
+                invois.clear()
             await clientState.otmen.set()
             if db.get_sub_status(message.from_user.id) == False:
                 user_tarif = "Ваш тариф: FREE"
-                await bot.send_message(message.from_user.id, user_tarif, reply_markup=nav.mainMenu1)
-                await bot.send_message(message.from_user.id,  'Чтобы пользоваться ботом без ограниченй, предлагаем оформить подписку по кнопке ниже😏', reply_markup=nav.sub_inline)
-                await bot.send_message(message.from_user.id,  '🎄Новогоднее предложение🎁', reply_markup=nav.sub_inline2)
+                invois[message.from_user.id]=[]
+                await bot.send_m(message.from_user.id, user_tarif, reply_markup=nav.mainMenu1)
+                qq = await bot.send_message(message.from_user.id,  'Чтобы пользоваться ботом без ограниченй, предлагаем оформить подписку по кнопке ниже😏', reply_markup=nav.sub_inline)
+                invois[message.from_user.id].append(qq.message_id)
+                qq = await bot.send_message(message.from_user.id,  '🎄Новогоднее предложение🎁', reply_markup=nav.sub_inline2)
+                invois[message.from_user.id].append(qq.message_id)
+               
 
             else:
                 user_sub = time_sub_day(db.get_time_sub(message.from_user.id))
                 user_sub = "\n Тариф: VIP\n Действителен еще " + user_sub
-                await bot.send_message(message.from_user.id,  user_sub, reply_markup=nav.mainMenu1)
+                await bot.send_m(message.from_user.id,  user_sub, reply_markup=nav.mainMenu1)
 
         elif message.text == "СОЗДАТЬ КРУГ":
+            if invois.get(message.from_user.id) != None:
+                for i in invois[message.from_user.id]:
+                    await bot.delete_message(message.from_user.id, i)
+                invois.clear()
             ui = message.from_user.id
             if db.get_sub_status(message.from_user.id) == False and db.get_free(message.from_user.id) == 0:
                 st = False
              
-                await bot.send_message(message.from_user.id,  "В вашем тарифе доступны круги до 30 сек.\n\nДавай начнем, отправь мне любое видео☺️", reply_markup=nav.mainMenu1)
+                await bot.send_m(message.from_user.id,  "В вашем тарифе доступны круги до 30 сек.\n\nДавай начнем, отправь мне любое видео☺️", reply_markup=nav.mainMenu1)
                 await clientState.videost.set()
             elif db.get_sub_status(message.from_user.id) == True or db.get_free(message.from_user.id) > 0:
                 st = True
-                await bot.send_message(message.from_user.id,  "В вашем тарифе ограничения отсутсвуют\n\nДавай начнем, отправь мне любое видео☺️", reply_markup=nav.mainMenu1)
+                await bot.send_m(message.from_user.id,  "В вашем тарифе ограничения отсутсвуют\n\nДавай начнем, отправь мне любое видео☺️", reply_markup=nav.mainMenu1)
                 await clientState.videost.set()
         
         elif message.text == "Рефералы":
+            if invois.get(message.from_user.id) != None:
+                for i in invois[message.from_user.id]:
+                    await bot.delete_message(message.from_user.id, i)
+                invois.clear()
             await clientState.otmen.set()
             ref=  str(db.get_referal(message.from_user.id))
             ref_free = str(db.get_free(message.from_user.id))
-            await bot.send_message(message.from_user.id,  f"Колличесвто приглашенных зайчиков: {ref}\n\nКоличество доступных бесплатных кругов: {ref_free}\n\n\nЧтобы заработать бесплатные круги, пригласи новых участниковв используя эту ссылку\nhttps://t.me/CCircle_bot?start={message.from_user.id}\n\nКак только кто-то зарегистрируется по этой ссылке, ты получишь уведомление❤️" , reply_markup=nav.mainMenu1)
+            await bot.send_m(message.from_user.id,  f"Колличесвто приглашенных зайчиков: {ref}\n\nКоличество доступных бесплатных кругов: {ref_free}\n\n\nЧтобы заработать бесплатные круги, пригласи новых участниковв используя эту ссылку\nhttps://t.me/CCircle_bot?start={message.from_user.id}\n\nКак только кто-то зарегистрируется по этой ссылке, ты получишь уведомление❤️" , reply_markup=nav.mainMenu1)
             # await bot.send_message(message.from_user.id, f"Чтобы заработать бесплатные круги, пригласи новых участниковв используя эту ссылку\nhttps://CCircle_bot?start={message.from_user.id}\nКак только кто-то зарегистрируется по этой ссылке, ты получишь уведомление❤️")
 
 
 
 @dp.message_handler(state=clientState.otmen)
 async def start(message: types):
-
+    global message__i
+    global invois
     if message.text == "В главное меню":
         await clientState.start.set()
-        
+        if invois.get(message.from_user.id)!= None:
+            for i in invois[message.from_user.id]:
+                await bot.delete_message(message.from_user.id, i)
+            invois.clear()
         await bot.send_message(message.from_user.id, 'Вы в главном меню😏', reply_markup=nav.mainMenu)
-        await bot.delete_message(message.from_user.id, (message.message_id-1))
-        await bot.delete_message(message.from_user.id, (message.message_id-2))
+        await delete_message(message.from_user.id)
+        
+        
+        # await bot.delete_message(message.from_user.id, (message.message_id-1))
+        # await bot.delete_message(message.from_user.id, (message.message_id-2))
 
 
-@dp.callback_query_handler(text='submonth', state="*")
-async def submonth ( call: types.CallbackQuery):
-    global srcvid
-    global srcaud
-    global srctex
-    global firstname
-    await clientState.otmen.set()
-    await bot.delete_message(call.from_user.id, (call.message.message_id+1))
-    await bot.delete_message(call.from_user.id, call.message.message_id)
-    await bot.send_invoice(chat_id=call.from_user.id, title="Подписка на CCircle", description="данная подписка дает возможность пользоваться ботом целый месяц без ограничейний", payload="month_sub", provider_token=YOUTOKEN, currency="RUB", start_parameter="test_bot", prices=[{"label": "RUB", "amount": 8000}])
-
+# @dp.callback_query_handler(text='submonth', state=clientState.start)
+# async def submonth ( call: types.CallbackQuery):
+#     global srcvid
+#     global srcaud
+#     global srctex
+#     global firstname
+#     await clientState.otmen.set()
+    
+#     await bot.delete_message(call.from_user.id, message__i[call.from_user.id])
+#     # await bot.delete_message(call.from_user.id, call.message.message_id)
+#     await bot.send_m(call.from_user.id, 'Во', reply_markup=nav.mainMenu1)
+    
+#     qq=await bot.send_invoice(chat_id=call.from_user.id, title="Подписка на CCircle", description="данная подписка дает возможность пользоваться ботом целый месяц без ограничейний", payload="month_sub", provider_token=YOUTOKEN, currency="RUB", start_parameter="test_bot", prices=[{"label": "RUB", "amount": 8000}])
+#     message__i[call.from_user.id].append(qq.message_id)
 
 @dp.callback_query_handler(text='submonth3', state="*")
 async def submonth(call: types.CallbackQuery):
@@ -423,15 +501,42 @@ async def submonth(call: types.CallbackQuery):
     global srcaud
     global srctex
     global firstname
+    global invois
     await clientState.otmen.set()
+    invois.clear()
     await bot.delete_message(call.from_user.id, (call.message.message_id-1))
     await bot.delete_message(call.from_user.id, call.message.message_id)
-    await bot.send_invoice(chat_id=call.from_user.id, title="Подписка на CCircle", description="данная подписка дает возможность пользоваться ботом целых 3 месяца без ограничейний", payload="month_sub3", provider_token=YOUTOKEN, currency="RUB", start_parameter="test_bot", prices=[{"label": "RUB", "amount": 15000}])
-
+    
+    qq = await bot.send_invoice(chat_id=call.from_user.id, title="Подписка на CCircle", description="данная подписка дает возможность пользоваться ботом целых 3 месяца без ограничейний", payload="month_sub3", provider_token=YOUTOKEN, currency="RUB", start_parameter="test_bot", prices=[{"label": "RUB", "amount": 15000}])
+    message__i[call.from_user.id].append(qq.message_id)
 
 @dp.pre_checkout_query_handler(state=clientState.all_states)
 async def process_pre_checkout_query(pre_checkout_query: types.PreCheckoutQuery):
     await bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
+
+
+@dp.callback_query_handler(text='submonth', state="*")
+async def submonth(call: types.CallbackQuery):
+    global srcvid
+    global srcaud
+    global srctex
+    global firstname
+    global message__i
+    await clientState.otmen.set()
+    if invois.get(call.from_user.id) != None:
+        for i in invois[call.from_user.id]:
+           await bot.delete_message(call.from_user.id, i)
+        invois.clear()
+    else:
+        await bot.delete_message(call.from_user.id, (call.message.message_id+1))
+        await bot.delete_message(call.from_user.id, call.message.message_id)
+    
+    await bot.send_m(call.from_user.id, 'Во', reply_markup=nav.mainMenu1)
+    
+    qq = await bot.send_invoice(chat_id=call.from_user.id, title="Подписка на CCircle", description="данная подписка дает возможность пользоваться ботом целый месяц без ограничейний", payload="month_sub", provider_token=YOUTOKEN, currency="RUB", start_parameter="test_bot", prices=[{"label": "RUB", "amount": 8000}])
+    message__i[call.from_user.id].append(qq.message_id)
+
+
 
 
 @dp.message_handler(content_types=ContentType.SUCCESSFUL_PAYMENT, state="*")
@@ -540,10 +645,11 @@ async def no_btn(call: types.CallbackQuery):
     global ui
     global cir
     global errors
+    global invois
     if st == False and db.get_free(ui) == 0:
         await clientState.start.set()
         await bot.send_message(ui, 'Отлично\nУже загружаю круг 🚛  ', reply_markup=types.ReplyKeyboardRemove())
-        await asyncio.sleep(20)
+        # await asyncio.sleep(20)
         na = str(call.message.chat.id) + ".mp4"
         try:
             circleOrig_30(srcvid[call.message.chat.id], na)
@@ -553,13 +659,15 @@ async def no_btn(call: types.CallbackQuery):
             await bot.send_message(1340988413, f"Ошибка {errors}")
             await bot.send_message(ui, 'Ваше видео битое\nВы в главном меню', reply_markup=nav.mainMenu)
             await clientState.start.set()
-            await clean(srcvid[ui])
+            await clean1(srcvid[ui])
         await bot.send_video_note(ui, InputFile(na), reply_markup=nav.mainMenu)
-        await bot.send_message(ui,  'Чтобы убрать водяной знак и загружать видео длиной в 1 минуту перейдите на тариф VIP по кнопке ниже😏', reply_markup=nav.sub_inline)
+        qq= await bot.send_message(ui,  'Чтобы убрать водяной знак и загружать видео длиной в 1 минуту перейдите на тариф VIP по кнопке ниже😏', reply_markup=nav.sub_inline)
+        invois[ui] = []
+        invois[ui].append(qq.message_id)
         await bot.send_message(ui, text=krug1(db.get_nickname(ui)))
         
         await bot.send_message(1340988413, f"Был создан круг\nИх уже {db.num_krug(1340988413)}")
-        await clean1(srcvid[ui])
+        await clean(srcvid[ui], na)
         
     elif st == True or  db.get_free(ui) > 0:
         await clientState.start.set()
@@ -668,7 +776,7 @@ async def get_sec(message: Message):
     global firstname
     global cir
     global errors
-
+    global invois
     await bot.delete_message(message.from_user.id, (message.message_id-1))
     if message.text == "Назад":
         await clientState.q1.set()
@@ -696,7 +804,9 @@ async def get_sec(message: Message):
 
             
             await bot.send_message(1340988413, f"Был создан круг\nИх уже {db.num_krug(1340988413)}")
-            await bot.send_message(message.from_user.id,  'Чтобы убрать водяной знак и загружать видео длиной в 1 минуту перейдите на тариф VIP по кнопке ниже😏', reply_markup=nav.sub_inline)
+            qq=await bot.send_message(message.from_user.id,  'Чтобы убрать водяной знак и загружать видео длиной в 1 минуту перейдите на тариф VIP по кнопке ниже😏', reply_markup=nav.sub_inline)
+            invois[message.from_user.id] = []
+            invois[message.from_user.id].append(qq.message_id)
             await bot.send_message(message.from_user.id, text=krug1(db.get_nickname(message.from_user.id)))
             await clientState.start.set()
         else:

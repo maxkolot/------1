@@ -46,3 +46,6 @@ async def cleanall(vi, vi2, au):
    os.remove(vi)
    os.remove(vi2)
    os.remove(au)
+
+
+
