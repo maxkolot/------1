@@ -835,9 +835,9 @@ async def get_sec(message: Message):
             await clientState.start.set()
     
     else:
-        await bot.send_message(message.from_user.id, "Просто напиши цифру😤")
+        await bot.send_message(message.from_user.id, "Просто напиши цифру😤 ")
 
-
+     
 
 
 
