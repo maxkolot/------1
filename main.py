@@ -189,7 +189,7 @@ async def smm333(message: types.Message):
                 db.set_time_sub(msg, time_sub)
                 await clientState.start.set()
                 try:
-                    await bot.send_message(msg, "Вам выдали подписку на 1 месяц❤️🤤", reply_markup=nav.mainMenu)
+                    await bot.send_message(msg, "Вам выдали подписку на 1 месяц❤️🤤")
                 except:
                     pass
             elif (not db.user_exists(msg)):
