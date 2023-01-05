@@ -20,6 +20,8 @@ logging.info('Hello')
 YOUTOKEN = "390540012:LIVE:28953"
 # TOKEN = ('5648421216:AAFhRPUQw0FQ6tGkxjyR-Y8TeYMGuhs68OA')
 TOKEN = ('5954410335:AAFKiIGDT1VTsgKuNvLgTsrKV-YwgmUdM-o')
+# TOKEN = ('5954917575:AAHMMTQW1IWfl5h6kZj4mYVtsk_MbSIeDNs')
+
 Configuration.account_id =  506751
 Configuration.secret_key ='538350'
 logging.basicConfig(level=logging.INFO)
@@ -75,6 +77,7 @@ st = {}
 ui = {}
 link = 0
 pic = 0
+vi = 0
 link_caption ={}
 link_url={}
 mmessage=''
@@ -106,6 +109,7 @@ class clientState(StatesGroup):
     q11 = State()
     q12 = State()
     smm = State()
+    smm33 = State()
     smmq = State()
     smmq1 = State()
     smm_pic = State()
@@ -156,6 +160,44 @@ async def smm(message: types.Message):
             await bot.send_message(1340988413, 'Напиши текст для рассылки', reply_markup=types.ReplyKeyboardRemove())
 
 
+@dp.message_handler(commands=['free'], state="*")
+async def smm(message: types.Message):
+    global link
+    global pic
+    link = 0
+    pic = 0
+    if message.chat.type == 'private':
+        if message.from_user.id == 1340988413:
+            await clientState.smm33.set()
+            # msg = message.forward_from.id
+            await bot.send_message(1340988413, 'Отправь мне сообщение от пользователям', reply_markup=types.ReplyKeyboardRemove())
+
+@dp.message_handler(state=clientState.smm33)
+async def smm333(message: types.Message):
+    global link
+    global pic
+    link = 0
+    pic = 0
+    if message.chat.type == 'private':
+        if message.from_user.id == 1340988413:
+            
+    # строка ниже достаёт id пользывателя из пересланного сообщения
+            msg = message.forward_from.id
+            if (db.user_exists(msg)):
+                await bot.send_message(1340988413, f'Пользователю {db.get_nickname(msg)} выданна подписка на месяц', reply_markup=nav.mainMenu)
+                time_sub = int(time.time()) + days_to_sec(30)
+                db.set_time_sub(msg, time_sub)
+                await clientState.start.set()
+                try:
+                    await bot.send_message(msg, "Вам выдали подписку на 1 месяц❤️🤤", reply_markup=nav.mainMenu)
+                except:
+                    pass
+            elif (not db.user_exists(msg)):
+                await bot.send_message(1340988413, f'Пользователь с id {msg } в базе не найден', reply_markup=nav.mainMenu)
+                await clientState.start.set()
+                
+
+
 @dp.message_handler(state=clientState.smm)
 async def replay_smm1(message: Message):
     global mmessage
@@ -163,7 +205,7 @@ async def replay_smm1(message: Message):
         if message.from_user.id == 1340988413:
             await clientState.smmq1.set()
             mmessage = message.text
-            await bot.send_message(1340988413, f"Будет фото?", reply_markup=nav.sub_inline_audio)
+            await bot.send_message(1340988413, f"Будет фото или видео? ", reply_markup=nav.sub_inline_audio)
 
 @dp.callback_query_handler(text=('yes_btn', 'no_btn'), state=clientState.smmq1)
 async def ssmQ(call: types.CallbackQuery):
@@ -171,10 +213,10 @@ async def ssmQ(call: types.CallbackQuery):
     global pic
     if call.data == 'yes_btn':
         if call.message.chat.type == 'private':
-            pic = 1
+            
             await bot.delete_message(call.from_user.id, call.message.message_id)
             
-            await bot.send_message(1340988413, 'Окей отправь мне фото')
+            await bot.send_message(1340988413, 'Окей отправь мне файл')
             await clientState.smm_pic.set()
     elif call.data == 'no_btn':
         await clientState.smmq2.set()
@@ -183,16 +225,38 @@ async def ssmQ(call: types.CallbackQuery):
         await bot.send_message(1340988413, 'Укажем ссылку кнопкой?', reply_markup=nav.sub_inline_audio)
 
 
-@dp.message_handler(content_types = ContentType.PHOTO, state=clientState.smm_pic)
+@dp.message_handler(content_types=ContentType.VIDEO, state=clientState.smm_pic)
 async def smm_pic(message: Message):
     global srcpic
     global file_id1
-    file_id1 = message.photo[-1].file_id
+    # if message.ContentType.PHOTO:
+    global vi
+    #     file_id1 = message.photo[-1].file_id 
+    if ContentType.VIDEO:
+        file_id1 = message.video.file_id 
+        vi = 1
     # file = await bot.get_file(file_id)
     # srcpic[message.chat.id] = f"smm{message.chat.id}.jpg"
     # await bot.download_file(file.file_path, srcpic[message.chat.id])
     await clientState.smmq2.set()
     await bot.send_message(1340988413, 'Окей\nУкажем ссылку кнопкой?', reply_markup=nav.sub_inline_audio)
+
+@dp.message_handler(content_types=ContentType.PHOTO, state=clientState.smm_pic)
+async def smm_pic(message: Message):
+    global srcpic
+    global file_id1
+    # if message.ContentType.PHOTO:
+    global pic
+    #     file_id1 = message.photo[-1].file_id 
+    if ContentType.VIDEO:
+        file_id1 = message.photo[-1].file_id 
+        pic = 1
+    # file = await bot.get_file(file_id)
+    # srcpic[message.chat.id] = f"smm{message.chat.id}.jpg"
+    # await bot.download_file(file.file_path, srcpic[message.chat.id])
+    await clientState.smmq2.set()
+    await bot.send_message(1340988413, 'Окей\nУкажем ссылку кнопкой?', reply_markup=nav.sub_inline_audio)
+
 
 @dp.callback_query_handler(text=('yes_btn', 'no_btn'), state=clientState.smmq2)
 async def ssmQ1(call: types.CallbackQuery):
@@ -255,18 +319,29 @@ async def publick(message: Message):
     global link_url
     global srcpic
     global file_id1
+    global vi
     
     if message.text == 'Done':
         await clientState.smmq3.set()
         await bot.delete_message(message.from_user.id, (message.message_id-1))
-        if pic == 1:
+        if pic == 1  or vi == 1:
             if link == 1:
-                await bot.send_photo(1340988413, photo=file_id1, caption=mmessage, reply_markup=nav.link_smm(link_caption, link_url))
-                await bot.send_message(1340988413, "Publick?", reply_markup=nav.sub_inline_audio)
+                if pic == 1:
+                    await bot.send_photo(1340988413, photo=file_id1, caption=mmessage, reply_markup=nav.link_smm(link_caption, link_url))
+                    await bot.send_message(1340988413, "Publick?", reply_markup=nav.sub_inline_audio)
+                elif vi == 1:
+                    await bot.send_video(1340988413, video=file_id1, caption=mmessage, reply_markup=nav.link_smm(link_caption, link_url))
+                    await bot.send_message(1340988413, "Publick?", reply_markup=nav.sub_inline_audio)
+            
             elif link == 0:
-                await bot.send_photo(1340988413, photo=file_id1, caption=mmessage)
-                await bot.send_message(1340988413, "Publick?", reply_markup=nav.sub_inline_audio)
-        elif pic == 0:
+                if pic == 1:
+                    await bot.send_photo(1340988413, photo=file_id1, caption=mmessage)
+                    await bot.send_message(1340988413, "Publick?", reply_markup=nav.sub_inline_audio)
+                elif vi == 1:
+                    await bot.send_video(1340988413, video=file_id1, caption=mmessage)
+                    await bot.send_message(1340988413, "Publick?", reply_markup=nav.sub_inline_audio)
+                
+        elif pic == 0 and vi == 0:
                 if link == 1:
                     await bot.send_message(1340988413,  f"{mmessage}", reply_markup=nav.link_smm(link_caption, link_url))
                     await bot.send_message(1340988413, "Publick?", reply_markup=nav.sub_inline_audio)
@@ -279,6 +354,7 @@ async def publick(message: Message):
 async def ssmQ1(call: types.CallbackQuery):
     global mmessage
     global link
+    global vi
     await bot.delete_message(call.from_user.id, (call.message.message_id-1))
 
     await bot.delete_message(call.from_user.id, (call.message.message_id))
@@ -286,25 +362,40 @@ async def ssmQ1(call: types.CallbackQuery):
 
         users = db.get_users_smm()
         for row in users:
-                
-            
-                if pic == 1:
+                    
+                if pic == 1 or vi == 1:
                     if link == 1:
-                        try:
-                            await bot.send_photo(row[0], photo=file_id1, caption=mmessage, reply_markup=nav.link_smm(link_caption, link_url))
-                            if row[1] != 1:
-                                db.set_active(row[0], 1)
-                        except:
-                            db.set_active(row[0], 0)
+                        if pic == 1:
+                            try:
+                                await bot.send_photo(row[0], photo=file_id1, caption=mmessage, reply_markup=nav.link_smm(link_caption, link_url))
+                                if row[1] != 1:
+                                    db.set_active(row[0], 1)
+                            except:
+                                db.set_active(row[0], 0)
+                        elif vi == 1:
+                            try:
+                                await bot.send_video(row[0], video=file_id1, caption=mmessage, reply_markup=nav.link_smm(link_caption, link_url))
+                                if row[1] != 1:
+                                    db.set_active(row[0], 1)
+                            except:
+                                db.set_active(row[0], 0)
                     elif link == 0:
+                        if pic == 1:
                             try:
                                 await bot.send_photo(row[0], photo=file_id1, caption=mmessage)
                                 if row[1] != 1:
                                     db.set_active(row[0], 1)
                             except:
                                 db.set_active(row[0], 0)
+                        elif vi ==1:
+                            try:
+                                await bot.send_video(row[0], video=file_id1, caption=mmessage)
+                                if row[1] != 1:
+                                    db.set_active(row[0], 1)
+                            except:
+                                db.set_active(row[0], 0)
 
-                elif pic == 0:
+                elif pic == 0 and vi == 0:
                         if link == 1:
                             try:
                                 await bot.send_message(row[0],  f"{mmessage}", reply_markup=nav.link_smm(link_caption, link_url))
